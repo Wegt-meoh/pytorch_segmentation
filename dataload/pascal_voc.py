@@ -1,5 +1,5 @@
 import os
-from random import random
+import random
 
 from PIL import Image, ImageFilter, ImageOps
 import numpy as np
@@ -59,13 +59,13 @@ class VOCSegmentation():
         
         return img,mask,os.path.basename(self.images[index])
 
-    def _img_transform(img):
+    def _img_transform(self,img):
         return np.array(img)
 
-    def _mask_transform(self, mask):
+    def _mask_transform(self,mask):
         return np.array(mask).astype('int32')
 
-    def _sync_transform(self,img,mask):
+    def _sync_transform(self,img,mask):             
         if random.random() < 0.5:
             img = img.transpose(Image.FLIP_LEFT_RIGHT)
             mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
