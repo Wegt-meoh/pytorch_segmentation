@@ -1,0 +1,1 @@
+2021-11-12 09:21:15,976 semantic_segmentation DEBUG: Namespace(backbone='resnet18', backbone_dir='D:\\pretrainModel', base_size=513, batch_size=8, crop_size=513, dataset='pascal_voc', device='cuda', epoch=60, log_dir='D:\\Tramac\\mymodelgroup\\results', lr=0.0001, model='simplenet', model_save_dir='', pretrained_base=True, workers=4)
