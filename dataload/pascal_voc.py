@@ -62,8 +62,10 @@ class VOCSegmentation():
     def _img_transform(self,img):
         return np.array(img)
 
-    def _mask_transform(self,mask):
-        return np.array(mask).astype('long')
+    def _mask_transform(self,mask):        
+        target = np.array(mask).astype('int32')
+        target[target == 255] = -1
+        return torch.from_numpy(target).long()
 
     def _sync_transform(self,img,mask):             
         if random.random() < 0.5:
