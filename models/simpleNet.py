@@ -28,7 +28,7 @@ class SimpleNet(nn.Module):
 
         x=self.cls_conv(x)
 
-        x=F.interpolate(size=(h,w),mode='bileaner',align_corners=True)
+        x=F.interpolate(x,size=(h,w),mode='bilinear',align_corners=True)
 
         return x
 
