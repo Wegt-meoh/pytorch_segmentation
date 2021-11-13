@@ -5,3 +5,4 @@ dataload/__pycache__/pascal_voc.cpython-37.pyc
 models/__pycache__/simpleNet.cpython-37.pyc
 models/base_models/__pycache__/resnet.cpython-37.pyc
 utils/__pycache__/Logger.cpython-37.pyc
+models/__pycache__/get_segmentation_model.cpython-37.pyc
