@@ -11,10 +11,18 @@ from models.base_models.resnet import *
 class SimpleNet(nn.Module):
     def __init__(self,num_class,pretrained_base=True,**kwargs):
         super().__init__()
-        self.spatial_path=SpatialPath()
-        self.context_path=ContextPath(pretrained_base,**kwargs)
+        self.spatial_path=SpatialPath()        
         self.decoder=Decoder()
         self.cls_conv=nn.Conv2d(256,num_class,1,1,padding=0)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+        self.context_path=ContextPath(pretrained_base,**kwargs)
 
     def forward(self,x):
         h,w=x.size()[2:]
@@ -66,6 +74,13 @@ class ContextPath(nn.Module):
         self.layer2 = self.backbone.layer2
         self.layer3 = self.backbone.layer3
         self.layer4 = self.backbone.layer4
+        if pretrained_base == False:
+            for m in self.modules():
+                if isinstance(m, nn.Conv2d):
+                    nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                elif isinstance(m, nn.BatchNorm2d):
+                    nn.init.constant_(m.weight, 1)
+                    nn.init.constant_(m.bias, 0)
 
     def forward(self,x):
         x=self.conv1(x)
