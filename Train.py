@@ -1,13 +1,6 @@
-# import os
-# import sys
-
-# cur_path = os.path.abspath(os.path.dirname(__file__))
-# root_path = os.path.split(cur_path)[0]
-# sys.path.append(root_path)
-
-
 from torch import nn
 import torch
+import os
 import torch.backends.cudnn as cudnn
 from torch.utils import data
 from Configer import get_parsed_args
@@ -16,17 +9,17 @@ from models.get_segmentation_model import get_segmentation_model
 from utils.Logger import get_logger
 
 class Trainer():
-    def __init__(self,args) -> None:
+    def __init__(self,args) -> None:        
         self.args=args
 
         train_dataset=get_segmentation_dataset(name=args.dataset,split='train',base_size=args.base_size,crop_size=args.crop_size)
-        val_dataset=get_segmentation_dataset(name=args.dataset,split='trainval',base_size=args.base_size,crop_size=args.crop_size)
+        val_dataset=get_segmentation_dataset(name=args.dataset,split='val',base_size=args.base_size,crop_size=args.crop_size)
         self.train_loader=data.DataLoader(dataset=train_dataset,shuffle=True,batch_size=args.batch_size,drop_last=True,num_workers=args.workers)
         self.val_loader=data.DataLoader(dataset=val_dataset,shuffle=True,batch_size=args.batch_size,drop_last=True,num_workers=args.workers)
  
         self.model=get_segmentation_model(name=args.model,num_class=len(train_dataset.classes),pretrained_base=args.pretrained_base,backbone_dir=args.backbone_dir).to(args.device)
 
-        self.criterion=nn.CrossEntropyLoss(ignore_index=255)
+        self.criterion=nn.CrossEntropyLoss(ignore_index=-1)
 
         self.optimizer=torch.optim.SGD(params=self.model.parameters(),lr=args.lr,momentum=0.9,weight_decay=4e-4)
 
@@ -42,7 +35,7 @@ class Trainer():
                 masks=masks.to(self.args.device)
                 
                 self.optimizer.zero_grad()
-                lr_now=adjust_lr(self.optimizer,self.args.lr,iter*epoch,iter_max)
+                lr_now=adjust_lr(self.optimizer,self.args.lr,iter+len(self.train_loader)*epoch,iter_max)
                 
                 preds=self.model(images)
                 
@@ -51,7 +44,11 @@ class Trainer():
                 self.optimizer.step()
 
                 if iter%100==0:
-                    logger.info('epoch:{}/{}, iter:{}/{}, lr:{:.4f}, loss:{:.4f}'.format(epoch+1,self.args.epoch,iter,len(self.train_loader),lr_now,loss_res.item()))        
+                    logger.info('epoch:{}/{}, iter:{}/{}, lr:{:.6f}, loss:{:.4f}'.format(epoch+1,self.args.epoch,iter,len(self.train_loader),lr_now,loss_res.item()))        
+
+            model_save_path='{}/{}_{}_{}/{}_{}_{}_{}'.format(self.args.model_save_dir,self.args.model,self.args.backbone,self.args.dataset,self.args.model,self.args.backbone,self.args.dataset,epoch+1)
+            torch.save(self.model.state_dict(),os.path.join(self.args.model_save_dir,model_save_path))
+            print('save model:'+model_save_path)
 
 def adjust_lr(optimize,lr_init,iter_current,iter_max):
     lr_current=lr_init*(1-iter_current/(iter_max+1))**0.9
@@ -65,9 +62,8 @@ if __name__=='__main__':
     if args.device=='cuda':
         cudnn.benchmark = True
 
-    logger=get_logger("semantic_segmentation",save_dir="{}/{}_{}".format(args.log_dir,args.model,args.backbone),filename='log.txt',mode='w')
+    logger=get_logger("semantic_segmentation",save_dir="{}/{}_{}_{}".format(args.log_dir,args.model,args.backbone,args.dataset),filename='log.txt',mode='w')
     logger.debug(args)
 
     trainer=Trainer(args)
-    trainer.train()
-    pass
+    trainer.train()    
