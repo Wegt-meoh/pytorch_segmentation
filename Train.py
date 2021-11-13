@@ -26,14 +26,14 @@ class Trainer():
  
         self.model=get_segmentation_model(name=args.model,num_class=len(train_dataset.classes),pretrained_base=args.pretrained_base,backbone_dir=args.backbone_dir).to(args.device)
 
-        self.criterion=nn.CrossEntropyLoss(ignore_index=-1)
+        self.criterion=nn.CrossEntropyLoss(ignore_index=255)
 
         self.optimizer=torch.optim.SGD(params=self.model.parameters(),lr=args.lr,momentum=0.9,weight_decay=4e-4)
 
     def train(self):
         print('Start train...')
         self.model.train()
-        iter_max=len(self.train_loader)
+        iter_max=len(self.train_loader)*self.args.epoch
         for epoch in range(self.args.epoch):
             for iter,(images,masks,_) in enumerate(self.train_loader):
                 iter+=1
@@ -42,18 +42,16 @@ class Trainer():
                 masks=masks.to(self.args.device)
                 
                 self.optimizer.zero_grad()
-                lr_now=adjust_lr(self.optimizer,self.args.lr,iter,iter_max)
+                lr_now=adjust_lr(self.optimizer,self.args.lr,iter*epoch,iter_max)
                 
-                preds=self.model(images)            
+                preds=self.model(images)
                 
                 loss_res=self.criterion(preds,masks)
                 loss_res.backward()
                 self.optimizer.step()
 
-                if iter%10==0:
-                    logger.debug('epoch:{}/{}, iter:{}/{}, lr:{}, loss:{}'.format(epoch,self.args.epoch,iter,len(self.train_loader),lr_now,loss_res.item()))
-
-        pass
+                if iter%100==0:
+                    logger.info('epoch:{}/{}, iter:{}/{}, lr:{:.4f}, loss:{:.4f}'.format(epoch+1,self.args.epoch,iter,len(self.train_loader),lr_now,loss_res.item()))        
 
 def adjust_lr(optimize,lr_init,iter_current,iter_max):
     lr_current=lr_init*(1-iter_current/(iter_max+1))**0.9
