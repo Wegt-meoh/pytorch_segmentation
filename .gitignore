@@ -1,0 +1,7 @@
+__pycache__/Configer.cpython-37.pyc
+dataload/__pycache__/cvc_voc.cpython-37.pyc
+dataload/__pycache__/get_segmentatio_dataset.cpython-37.pyc
+dataload/__pycache__/pascal_voc.cpython-37.pyc
+models/__pycache__/simpleNet.cpython-37.pyc
+models/base_models/__pycache__/resnet.cpython-37.pyc
+utils/__pycache__/Logger.cpython-37.pyc
