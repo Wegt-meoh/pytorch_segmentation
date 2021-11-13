@@ -7,7 +7,7 @@ from torchvision import transforms
 
 
 class VOCSegmentation():
-    def __init__(self,root=r'D:\datasets\VOCdevkit\VOC2012',split='train',base_size=513,crop_size=513,**kwargs) -> None:        
+    def __init__(self,root='/home/deep1/QuePengbiao/datasets/VOCdevkit/VOC2012',split='train',base_size=513,crop_size=513,**kwargs) -> None:        
         self.transform=transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize([.485, .456, .406], [.229, .224, .225]),
@@ -63,7 +63,7 @@ class VOCSegmentation():
         return np.array(img)
 
     def _mask_transform(self,mask):
-        return np.array(mask).astype('int32')
+        return np.array(mask).astype('long')
 
     def _sync_transform(self,img,mask):             
         if random.random() < 0.5:
