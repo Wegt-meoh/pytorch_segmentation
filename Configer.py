@@ -1,19 +1,17 @@
 import argparse
-from math import trunc
-from sys import stdout
 
 def get_parsed_args():
     args=argparse.ArgumentParser(description="segmentation parameter")
 
     args.add_argument("--model",type=str,default='simplenet')
-    args.add_argument('--pretrained_model',type=str,default='/home/deep1/QuePengbiao/result/simplenet_resnet34_cvc_voc/simplenet_resnet34_cvc_voc_15')
+    args.add_argument('--pretrained_model',type=str,default='/home/deep1/QuePengbiao/result/simplenet_resnet34_cvc_voc/simplenet_resnet34_cvc_voc_60')
     args.add_argument("--backbone",type=str,default='resnet34')
     args.add_argument("--pretrained_base",type=bool,default=True)
     args.add_argument("--backbone_dir",type=str,default='/home/deep1/QuePengbiao/pretrain_models')
     args.add_argument("--lr",type=float,default=1e-4)
 
     args.add_argument("--dataset",type=str,default='cvc_voc')
-    args.add_argument("--epoch",type=int,default=60)
+    args.add_argument("--epoch",type=int,default=120)
     args.add_argument("--batch_size",type=int,default=6)
     args.add_argument("--base_size",type=int,default=513)
     args.add_argument("--crop_size",type=int,default=513)
@@ -23,6 +21,7 @@ def get_parsed_args():
 
     args.add_argument("--log_dir",type=str,default='/home/deep1/QuePengbiao/result')
     args.add_argument("--model_save_dir",type=str,default='/home/deep1/QuePengbiao/result')
+    args.add_argument("--pred_save_dir",type=str,default='/home/deep1/QuePengbiao/result')
 
     return args.parse_args()
 
