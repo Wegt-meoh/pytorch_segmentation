@@ -55,15 +55,7 @@ class CVCSegmentation():
         if self.transform!=None:
             img=self.transform(img)
         
-        return img,mask,os.path.basename(self.images[index])
-
-    def _img_transform(self,img):
-        return np.array(img)
-
-    def _mask_transform(self,mask):        
-        target = np.array(mask).astype('int32')
-        target[target > 0] = 1
-        return torch.from_numpy(target).long()
+        return img,mask,os.path.basename(self.images[index])    
 
     def _sync_transform(self,img,mask):             
         if random.random() < 0.5:
@@ -97,14 +89,14 @@ class CVCSegmentation():
         if random.random() < 0.5:            
             img = img.filter(ImageFilter.GaussianBlur(radius=random.random()))
         # final transform
-        img, mask = self._img_transform(img), self._mask_transform(mask)
+        img, mask = _img_transform(img), _mask_transform(mask)
         return img, mask
 
     def _val_sync_transform(self,img,mask):
         img=img.resize((self.crop_size,self.crop_size),Image.BILINEAR)
         mask=mask.resize((self.crop_size,self.crop_size),Image.NEAREST)
 
-        img,mask=self._img_transform(img),self._mask_transform(mask)
+        img,mask=_img_transform(img),_mask_transform(mask)
         return img,mask
 
     def __len__(self):
@@ -114,3 +106,15 @@ class CVCSegmentation():
     def classes(self):
         """Category names."""
         return ('background', 'cvc')
+        pass    
+
+    def save_pred(self,pred,path):
+        pass
+
+def _img_transform(img):
+        return np.array(img)
+
+def _mask_transform(mask):        
+    target = np.array(mask).astype('int32')
+    target[target > 0] = 1
+    return torch.from_numpy(target).long()
