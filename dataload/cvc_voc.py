@@ -107,13 +107,7 @@ class CVCSegmentation():
     def classes(self):
         """Category names."""
         return ('background', 'cvc')
-        pass    
-
-    def save_pred(self,pred,path,filename):                                   
-        impred=Image.fromarray(pred)
-        impred=impred.putpalette([0,0,0,255,255,255])
-        impred.save(path+filename+'.jpg')
-        pass
+        pass         
 
 def _img_transform(img):
         return np.array(img)
