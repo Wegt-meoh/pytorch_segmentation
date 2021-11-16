@@ -4,7 +4,7 @@ def get_parsed_args():
     args=argparse.ArgumentParser(description="segmentation parameter")
 
     args.add_argument("--model",type=str,default='simplenet')
-    args.add_argument('--pretrained_model',type=str,default='/home/deep1/QuePengbiao/result/simplenet_resnet34_cvc_voc/simplenet_resnet34_cvc_voc_60')
+    args.add_argument('--pretrained_model',type=str,default='/home/deep1/QuePengbiao/result/simplenet_resnet34_cvc_voc/simplenet_resnet34_cvc_voc_120')
     args.add_argument("--backbone",type=str,default='resnet34')
     args.add_argument("--pretrained_base",type=bool,default=True)
     args.add_argument("--backbone_dir",type=str,default='/home/deep1/QuePengbiao/pretrain_models')

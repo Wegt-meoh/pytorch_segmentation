@@ -12,10 +12,11 @@ class CVCSegmentation():
             transforms.ToTensor(),
             transforms.Normalize([.485, .456, .406], [.229, .224, .225]),
         ])
+        self.root=root
         self.split=split
         self.base_size=base_size
         self.crop_size=crop_size
-                
+        
         voc_root=os.path.join(root,'CVC-912')
         split_file=os.path.join(voc_root,'{}_file.txt'.format(split))
 
@@ -55,7 +56,7 @@ class CVCSegmentation():
         if self.transform!=None:
             img=self.transform(img)
         
-        return img,mask,os.path.basename(self.images[index])    
+        return img,mask,self.images[index].replace(self.root, "").replace('/', '_')[:-4]
 
     def _sync_transform(self,img,mask):             
         if random.random() < 0.5:
@@ -108,7 +109,10 @@ class CVCSegmentation():
         return ('background', 'cvc')
         pass    
 
-    def save_pred(self,pred,path):
+    def save_pred(self,pred,path,filename):                                   
+        impred=Image.fromarray(pred)
+        impred=impred.putpalette([0,0,0,255,255,255])
+        impred.save(path+filename+'.jpg')
         pass
 
 def _img_transform(img):
