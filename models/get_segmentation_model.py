@@ -1,8 +1,10 @@
 from models.simpleNet import SimpleNet
+from models.bisenet import BiSeNet
 
 
 models={
-    'simplenet':SimpleNet
+    'simplenet':SimpleNet,
+    'bisenet':BiSeNet
 }
 
 def get_segmentation_model(name,**kwargs):
