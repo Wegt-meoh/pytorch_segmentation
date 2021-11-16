@@ -12,16 +12,18 @@ class Trainer():
     def __init__(self,args) -> None:        
         self.args=args
 
-        train_dataset=get_segmentation_dataset(name=args.dataset,split='train',base_size=args.base_size,crop_size=args.crop_size)
-        val_dataset=get_segmentation_dataset(name=args.dataset,split='val',base_size=args.base_size,crop_size=args.crop_size)
-        self.train_loader=data.DataLoader(dataset=train_dataset,shuffle=True,batch_size=args.batch_size,drop_last=True,num_workers=args.workers)
-        self.val_loader=data.DataLoader(dataset=val_dataset,shuffle=True,batch_size=args.batch_size,drop_last=True,num_workers=args.workers)
+        train_dataset=get_segmentation_dataset(
+            name=args.dataset,split='train',base_size=args.base_size,crop_size=args.crop_size)        
+        self.train_loader=data.DataLoader(
+            dataset=train_dataset,shuffle=True,batch_size=args.batch_size,drop_last=True,num_workers=args.workers)        
  
-        self.model=get_segmentation_model(name=args.model,num_class=len(train_dataset.classes),pretrained_base=args.pretrained_base,backbone_dir=args.backbone_dir).to(args.device)
+        self.model=get_segmentation_model(
+            name=args.model,num_class=len(train_dataset.classes),pretrained_base=args.pretrained_base,backbone_dir=args.backbone_dir).to(args.device)
 
         self.criterion=nn.CrossEntropyLoss(ignore_index=-1)
 
-        self.optimizer=torch.optim.SGD(params=self.model.parameters(),lr=args.lr,momentum=0.9,weight_decay=4e-4)
+        self.optimizer=torch.optim.SGD(
+            params=self.model.parameters(),lr=args.lr,momentum=0.9,weight_decay=4e-4)
 
     def train(self):
         print('Start train...')
@@ -43,11 +45,13 @@ class Trainer():
                 loss_res.backward()
                 self.optimizer.step()
 
-                if iter%100==0:
+                if iter%100==0 or iter==len(self.train_loader):
                     logger.info('epoch:{}/{}, iter:{}/{}, lr:{:.6f}, loss:{:.4f}'.format(epoch+1,self.args.epoch,iter,len(self.train_loader),lr_now,loss_res.item()))        
 
-            model_save_path='{}/{}_{}_{}/{}_{}_{}_{}'.format(self.args.model_save_dir,self.args.model,self.args.backbone,self.args.dataset,self.args.model,self.args.backbone,self.args.dataset,epoch+1)
-            torch.save(self.model.state_dict(),os.path.join(self.args.model_save_dir,model_save_path))
+            model_save_path='{}/{}_{}_{}/models'.format(self.args.model_save_dir,self.args.model,self.args.backbone,self.args.dataset)
+            if not os.path.exists(model_save_path):
+                os.makedirs(model_save_path)
+            torch.save(self.model.state_dict(),os.path.join(model_save_path,str(epoch+1))+'.pth')
             print('save model:'+model_save_path)
 
 def adjust_lr(optimize,lr_init,iter_current,iter_max):
