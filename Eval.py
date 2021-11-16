@@ -3,6 +3,7 @@ from torch.utils import data
 from Configer import get_parsed_args
 import torch.backends.cudnn as cudnn
 from dataload.get_segmentatio_dataset import get_segmentation_dataset
+from dataload.utils import save_pred
 from models.get_segmentation_model import get_segmentation_model
 from utils.Metric import *
 
@@ -12,11 +13,10 @@ class Evalator():
         
         val_dataset=get_segmentation_dataset(name=args.dataset,split='val',base_size=args.base_size,crop_size=args.crop_size)                
         self.val_loader=data.DataLoader(dataset=val_dataset,shuffle=False,batch_size=1,drop_last=True,num_workers=args.workers)
-
-        self.save_pred=val_dataset.save_pred
+        
         self.num_class=len(val_dataset.classes)
 
-        self.model=get_segmentation_model(name=args.model,backbone=args.backbone,pretrained_base=args.pretrained_base,num_class=len(val_dataset.classes),backbone_dir=args.backbone_dir).to(args.device)
+        self.model=get_segmentation_model(name=args.model,backbone=args.backbone,pretrained_base=False,num_class=len(val_dataset.classes)).to(args.device)
 
         pretrained_model_state_dict=torch.load(args.pretrained_model,args.device)
         model_state_dict=self.model.state_dict()
@@ -48,8 +48,8 @@ class Evalator():
                 intersection,union=intersectionAndUnion(predict,target,self.num_class)
 
                 total_acc+=acc
-                total_mIoU+=intersection/union
-                self.save_pred(predict,'{}/{}_{}_{}/preds'.format(self.args.pred_save_dir,self.args.model,self.args.backbone,self.args.dataset),_[0])
+                total_mIoU+=intersection/union                
+                save_pred(predict,'{}/{}_{}_{}/preds'.format(self.args.pred_save_dir,self.args.model,self.args.backbone,self.args.dataset),_[0],self.args.dataset)
                 pass
             pass
         print(total_acc/len(self.val_loader),total_mIoU/len(self.val_loader))
