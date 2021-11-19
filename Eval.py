@@ -30,7 +30,7 @@ class Evalator():
     def eval(self):
         self.model.eval()
         print('start eval...')
-        total_acc,total_mIoU=0.0,[0.0,0.0]
+        total_acc,total_inter,total_union=0.0,[0.0 for i in range(self.num_class)],[0.0 for i in range(self.num_class)]
         with torch.no_grad():
             for iter,(image,mask,_) in enumerate(self.val_loader):
                 iter+=1
@@ -47,12 +47,15 @@ class Evalator():
                 acc,val_sum=accuracy(predict,target)
                 intersection,union=intersectionAndUnion(predict,target,self.num_class)
 
-                total_acc+=acc
-                total_mIoU+=intersection/union                
+                total_acc+=acc                
+                total_inter+=intersection
+                total_union+=union                                
+
                 save_pred(predict,'{}/{}_{}_{}/preds'.format(self.args.pred_save_dir,self.args.model,self.args.backbone,self.args.dataset),_[0],self.args.dataset)
                 pass
             pass
-        print(total_acc/len(self.val_loader),total_mIoU/len(self.val_loader))
+        IoU=total_inter/total_union
+        print('ACC:{}, mIoU:{}, IoU:{}'.format(total_acc/len(self.val_loader),IoU.mean(),IoU))
 
 if __name__ == '__main__':
     args=get_parsed_args()
