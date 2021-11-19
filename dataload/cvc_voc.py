@@ -94,8 +94,8 @@ class CVCSegmentation():
         return img, mask
 
     def _val_sync_transform(self,img,mask):
-        img=img.resize((self.crop_size,self.crop_size),Image.BILINEAR)
-        mask=mask.resize((self.crop_size,self.crop_size),Image.NEAREST)
+        # img=img.resize((self.crop_size,self.crop_size),Image.BILINEAR)
+        # mask=mask.resize((self.crop_size,self.crop_size),Image.NEAREST)
 
         img,mask=_img_transform(img),_mask_transform(mask)
         return img,mask
