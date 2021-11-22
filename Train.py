@@ -18,7 +18,7 @@ class Trainer():
             dataset=train_dataset,shuffle=True,batch_size=args.batch_size,drop_last=True,num_workers=args.workers)        
  
         self.model=get_segmentation_model(
-            name=args.model,num_class=len(train_dataset.classes),pretrained_base=args.pretrained_base,backbone_dir=args.backbone_dir).to(args.device)
+            name=args.model,num_class=len(train_dataset.classes),pretrained_base=args.pretrained_base,backbone=args.backbone,backbone_dir=args.backbone_dir).to(args.device)
 
         self.criterion=nn.CrossEntropyLoss(ignore_index=-1)
 
