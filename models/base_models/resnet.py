@@ -202,7 +202,8 @@ def resnet50(pretrained=False, **kwargs):
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
         model.load_state_dict(model_zoo.load_url(
-            model_urls['resnet50'], model_dir=kwargs['baseModelDir'], check_hash=True))
+            model_urls['resnet50'], model_dir=kwargs['backbone_dir'], check_hash=True))
+        print('load resnet50 as pretrained backbone from {}'.format(kwargs['backbone_dir']))            
     return model
 
 
