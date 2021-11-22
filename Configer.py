@@ -3,8 +3,8 @@ import argparse
 def get_parsed_args():
     args=argparse.ArgumentParser(description="segmentation parameter")
 
-    args.add_argument("--model",type=str,default='bisenet')
-    args.add_argument('--pretrained_model',type=str,default='/home/deep1/QuePengbiao/result/bisenet_resnet34_pascal_voc/models/480.pth',
+    args.add_argument("--model",type=str,default='bisenetv')
+    args.add_argument('--pretrained_model',type=str,default='/home/deep1/QuePengbiao/result/bisenet_resnet34_pascal_voc/models/1000.pth',
                         help='only used in eval')
     args.add_argument("--backbone",type=str,default='resnet34')
     args.add_argument("--pretrained_base",type=bool,default=True)
