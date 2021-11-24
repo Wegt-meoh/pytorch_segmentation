@@ -19,8 +19,7 @@ class BiSeNetV(nn.Module):
         size = x.size()[2:]
         spatial_out = self.spatial_path(x)
         context_out = self.context_path(x)
-        fusion_out = self.ffm(spatial_out, context_out[-1])
-        outputs = []
+        fusion_out = self.ffm(spatial_out, context_out[-1])        
         x = self.head(fusion_out)
         x = F.interpolate(x, size, mode='bilinear', align_corners=True)
         return x        
