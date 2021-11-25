@@ -8,6 +8,8 @@ from dataload.get_segmentatio_dataset import get_segmentation_dataset
 from models.get_segmentation_model import get_segmentation_model
 from utils.Logger import get_logger
 
+os.environ['CUDA_VISIBLE_DEVICES']='5'
+
 class Trainer():
     def __init__(self,args) -> None:        
         self.args=args
@@ -48,17 +50,21 @@ class Trainer():
                 if iter%100==0 or iter==len(self.train_loader):
                     logger.info('epoch:{}/{}, iter:{}/{}, lr:{:.6f}, loss:{:.4f}'.format(epoch+1,self.args.epoch,iter,len(self.train_loader),lr_now,loss_res.item()))        
 
-            model_save_path='{}/{}_{}_{}/models'.format(self.args.model_save_dir,self.args.model,self.args.backbone,self.args.dataset)
-            if not os.path.exists(model_save_path):
-                os.makedirs(model_save_path)
-            torch.save(self.model.state_dict(),os.path.join(model_save_path,str(epoch+1))+'.pth')
-            print('save model:'+model_save_path)
+            if epoch % 4 == 0:
+                save_model(self, epoch)
 
 def adjust_lr(optimize,lr_init,iter_current,iter_max):
     lr_current=lr_init*(1-iter_current/(iter_max+1))**0.9
     for i in optimize.param_groups:
         i['lr']=lr_current    
     return lr_current
+
+def save_model(self,epoch):
+    model_save_path='{}/{}_{}_{}/models'.format(self.args.model_save_dir,self.args.model,self.args.backbone,self.args.dataset)
+    if not os.path.exists(model_save_path):
+        os.makedirs(model_save_path)
+    torch.save(self.model.state_dict(),os.path.join(model_save_path,str(epoch+1))+'.pth')
+    print('save model:'+model_save_path)
 
 if __name__=='__main__':
     args=get_parsed_args()
