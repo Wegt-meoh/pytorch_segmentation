@@ -6,7 +6,8 @@ import torch.nn.functional as F
 from models.base_models.resnet import *
 from models.model_module import Depthwise_Separable_Conv
 
-
+# H_{out} = \left\lfloor\frac{H_{in}  + 2 \times \text{padding}[0] - \text{dilation}[0]
+#                         \times (\text{kernel\_size}[0] - 1) - 1}{\text{stride}[0]} + 1\right\rfloor
 class BiSeNetVV(nn.Module):
     def __init__(self, num_class, backbone='resnet34',pretrained_base=True, **kwargs):
         super(BiSeNetVV, self).__init__()        
@@ -15,9 +16,21 @@ class BiSeNetVV(nn.Module):
         self.ffm = FeatureFusion(256, 256, 4, **kwargs)
         self.head = _BiSeHead(256, 64, num_class, **kwargs)
         #lower upsample
-        self.conv1=Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1)
-        self.conv2=Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1)
-        self.conv3=Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1)
+        self.conv1=nn.Sequential(
+            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1),
+            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1),
+            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1)
+        )
+        self.conv2=nn.Sequential(
+            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1),
+            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1),
+            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1)
+        )
+        self.conv3=nn.Sequential(
+            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1),
+            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1),
+            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1)
+        )        
 
     def forward(self, x):
         size = x.size()[2:]
@@ -39,7 +52,7 @@ class _BiSeHead(nn.Module):
         super(_BiSeHead, self).__init__()
         self.block = nn.Sequential(
             _ConvBNReLU(in_channels, inter_channels, 3, 1, 1, norm_layer=norm_layer),
-            nn.Dropout(0.1),            
+            nn.Dropout(0.1),
             Depthwise_Separable_Conv(inter_channels,num_class,1)
         )
 
@@ -57,7 +70,7 @@ class SpatialPath(nn.Module):
         self.conv7x7 = _ConvBNReLU(in_channels, inter_channels, 7, 2, 3, norm_layer=norm_layer)
         self.conv3x3_1 = _ConvBNReLU(inter_channels, inter_channels, 3, 2, 1, norm_layer=norm_layer)
         self.conv3x3_2 = _ConvBNReLU(inter_channels, inter_channels, 3, 2, 1, norm_layer=norm_layer)
-        self.conv1x1 = _ConvBNReLU(inter_channels, out_channels, 1, 1, 0, norm_layer=norm_layer)
+        self.conv1x1 = _ConvBNReLU(inter_channels, out_channels, 1, 1, 0, norm_layer=norm_layer)        
 
     def forward(self, x):
         x = self.conv7x7(x)
@@ -78,6 +91,13 @@ class _GlobalAvgPooling(nn.Module):
             nn.ReLU(True)
         )
 
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, norm_layer):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
     def forward(self, x):
         size = x.size()[2:]
         pool = self.gap(x)
@@ -93,7 +113,7 @@ class AttentionRefinmentModule(nn.Module):
             nn.AdaptiveAvgPool2d(1),
             _ConvBNReLU(out_channels, out_channels, 1, 1, 0, norm_layer=norm_layer),
             nn.Sigmoid()
-        )
+        )       
 
     def forward(self, x):
         x = self.conv3x3(x)
@@ -137,7 +157,7 @@ class ContextPath(nn.Module):
         self.refines = nn.ModuleList(
             [_ConvBNReLU(inter_channels, inter_channels, 3, 1, 1, norm_layer=norm_layer),
              _ConvBNReLU(inter_channels, inter_channels, 3, 1, 1, norm_layer=norm_layer)]
-        )
+        )        
 
     def forward(self, x):
         x = self.conv1(x)
@@ -196,6 +216,13 @@ class _ConvBNReLU(nn.Module):
         self.conv = Depthwise_Separable_Conv(in_channels,out_channels,kernel_size,stride,padding)
         self.bn = norm_layer(out_channels)
         self.relu = nn.ReLU6(True) if relu6 else nn.ReLU(True)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, norm_layer):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
         x = self.conv(x)
