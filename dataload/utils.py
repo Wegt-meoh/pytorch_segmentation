@@ -2,23 +2,26 @@ from PIL import Image
 import numpy as np
 import os
 
-def save_pred(pred,path,filename,dataset):                                   
-        impred=Image.fromarray(pred)        
-        if dataset=='cvc_voc':
-            impred.putpalette(cvc_palette())
-        elif dataset=='pascal_voc':
-            impred.putpalette(_getvocpallete(256))
 
-        if not os.path.exists(path):
-            os.makedirs(path)
-        impred.save(path+'/'+filename+'.png')
-        pass 
+def save_pred(pred, path, filename, dataset):
+    impred = Image.fromarray(pred)
+    if dataset == 'cvc_voc':
+        impred.putpalette(cvc_palette())
+    elif dataset in ['pascal_voc', 'coco']:
+        impred.putpalette(_getvocpallete(256))
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+    impred.save(path+'/'+filename+'.png')
+    pass
+
 
 def cvc_palette():
-    palette=[255,255,255,0,0,0]
+    palette = [255, 255, 255, 0, 0, 0]
     for i in range(256*3-6):
         palette.append(0)
     return palette
+
 
 def _getvocpallete(num_cls):
     n = num_cls
