@@ -8,52 +8,64 @@ from models.model_module import Depthwise_Separable_Conv
 
 # H_{out} = \left\lfloor\frac{H_{in}  + 2 \times \text{padding}[0] - \text{dilation}[0]
 #                         \times (\text{kernel\_size}[0] - 1) - 1}{\text{stride}[0]} + 1\right\rfloor
+
+
 class BiSeNetVV(nn.Module):
-    def __init__(self, num_class, backbone='resnet34',pretrained_base=True, **kwargs):
-        super(BiSeNetVV, self).__init__()        
+    def __init__(self, num_class, backbone='resnet34', pretrained_base=True, **kwargs):
+        super(BiSeNetVV, self).__init__()
         self.spatial_path = SpatialPath(3, 128, **kwargs)
         self.context_path = ContextPath(backbone, pretrained_base, **kwargs)
         self.ffm = FeatureFusion(256, 256, 4, **kwargs)
         self.head = _BiSeHead(256, 64, num_class, **kwargs)
-        #lower upsample
-        self.conv1=nn.Sequential(
-            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1),
-            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1),
-            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1)
+        # lower upsample
+        self.conv1 = nn.Sequential(
+            _ConvBNReLU(num_class, num_class, 3, 1, 1),
+            _ConvBNReLU(num_class, num_class, 3, 1, 1),
+            _ConvBNReLU(num_class, num_class, 3, 1, 1)
         )
-        self.conv2=nn.Sequential(
-            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1),
-            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1),
-            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1)
+        self.conv2 = nn.Sequential(
+            _ConvBNReLU(num_class, num_class, 3, 1, 1),
+            _ConvBNReLU(num_class, num_class, 3, 1, 1),
+            _ConvBNReLU(num_class, num_class, 3, 1, 1)
         )
-        self.conv3=nn.Sequential(
-            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1),
-            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1),
-            Depthwise_Separable_Conv(num_class, num_class,kernel_size=3, padding=1,stride=1)
-        )        
+        self.conv3 = nn.Sequential(
+            _ConvBNReLU(num_class, num_class, 3, 1, 1),
+            _ConvBNReLU(num_class, num_class, 3, 1, 1),
+            _ConvBNReLU(num_class, num_class, 3, 1, 1),
+            nn.Dropout(0.1),
+            Depthwise_Separable_Conv(num_class, num_class, 1)
+        )
 
     def forward(self, x):
         size = x.size()[2:]
         spatial_out = self.spatial_path(x)
         context_out = self.context_path(x)
-        fusion_out = self.ffm(spatial_out, context_out[-1])        
+        fusion_out = self.ffm(spatial_out, context_out[-1])
+
         x = self.head(fusion_out)
-        x = F.interpolate(x, scale_factor=2, mode='bilinear', align_corners=True)
+
+        x = F.interpolate(x, scale_factor=2, mode='bilinear',
+                          align_corners=True)
         x = self.conv1(x)
-        x = F.interpolate(x, scale_factor=2, mode='bilinear', align_corners=True)
+        x = F.interpolate(x, scale_factor=2, mode='bilinear',
+                          align_corners=True)
         x = self.conv2(x)
-        x = F.interpolate(x, scale_factor=2, mode='bilinear', align_corners=True)
+        x = F.interpolate(x, scale_factor=2, mode='bilinear',
+                          align_corners=True)
         x = self.conv3(x)
+
         x = F.interpolate(x, size, mode='bilinear', align_corners=True)
-        return x        
+        return x
+
 
 class _BiSeHead(nn.Module):
     def __init__(self, in_channels, inter_channels, num_class, norm_layer=nn.BatchNorm2d, **kwargs):
         super(_BiSeHead, self).__init__()
         self.block = nn.Sequential(
-            _ConvBNReLU(in_channels, inter_channels, 3, 1, 1, norm_layer=norm_layer),
-            nn.Dropout(0.1),
-            Depthwise_Separable_Conv(inter_channels,num_class,1)
+            _ConvBNReLU(in_channels, inter_channels, 3,
+                        1, 1, norm_layer=norm_layer),
+            # nn.Dropout(0.1),
+            Depthwise_Separable_Conv(inter_channels, num_class, 1)
         )
 
     def forward(self, x):
@@ -67,10 +79,14 @@ class SpatialPath(nn.Module):
     def __init__(self, in_channels, out_channels, norm_layer=nn.BatchNorm2d, **kwargs):
         super(SpatialPath, self).__init__()
         inter_channels = 64
-        self.conv7x7 = _ConvBNReLU(in_channels, inter_channels, 7, 2, 3, norm_layer=norm_layer)
-        self.conv3x3_1 = _ConvBNReLU(inter_channels, inter_channels, 3, 2, 1, norm_layer=norm_layer)
-        self.conv3x3_2 = _ConvBNReLU(inter_channels, inter_channels, 3, 2, 1, norm_layer=norm_layer)
-        self.conv1x1 = _ConvBNReLU(inter_channels, out_channels, 1, 1, 0, norm_layer=norm_layer)        
+        self.conv7x7 = _ConvBNReLU(
+            in_channels, inter_channels, 7, 2, 3, norm_layer=norm_layer)
+        self.conv3x3_1 = _ConvBNReLU(
+            inter_channels, inter_channels, 3, 2, 1, norm_layer=norm_layer)
+        self.conv3x3_2 = _ConvBNReLU(
+            inter_channels, inter_channels, 3, 2, 1, norm_layer=norm_layer)
+        self.conv1x1 = _ConvBNReLU(
+            inter_channels, out_channels, 1, 1, 0, norm_layer=norm_layer)
 
     def forward(self, x):
         x = self.conv7x7(x)
@@ -85,15 +101,16 @@ class _GlobalAvgPooling(nn.Module):
     def __init__(self, in_channels, out_channels, norm_layer, **kwargs):
         super(_GlobalAvgPooling, self).__init__()
         self.gap = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),            
-            Depthwise_Separable_Conv(in_channels,out_channels,1),
+            nn.AdaptiveAvgPool2d(1),
+            Depthwise_Separable_Conv(in_channels, out_channels, 1),
             norm_layer(out_channels),
             nn.ReLU(True)
         )
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu')
             elif isinstance(m, norm_layer):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
@@ -108,12 +125,14 @@ class _GlobalAvgPooling(nn.Module):
 class AttentionRefinmentModule(nn.Module):
     def __init__(self, in_channels, out_channels, norm_layer=nn.BatchNorm2d, **kwargs):
         super(AttentionRefinmentModule, self).__init__()
-        self.conv3x3 = _ConvBNReLU(in_channels, out_channels, 3, 1, 1, norm_layer=norm_layer)
+        self.conv3x3 = _ConvBNReLU(
+            in_channels, out_channels, 3, 1, 1, norm_layer=norm_layer)
         self.channel_attention = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
-            _ConvBNReLU(out_channels, out_channels, 1, 1, 0, norm_layer=norm_layer),
+            _ConvBNReLU(out_channels, out_channels, 1,
+                        1, 0, norm_layer=norm_layer),
             nn.Sigmoid()
-        )       
+        )
 
     def forward(self, x):
         x = self.conv3x3(x)
@@ -145,10 +164,11 @@ class ContextPath(nn.Module):
         self.layer4 = pretrained.layer4
 
         inter_channels = 128
-        basic_input_channels=256
-        if backbone not in ('resnet18','resnet34'):
-            basic_input_channels*=4
-        self.global_context = _GlobalAvgPooling(basic_input_channels*2, inter_channels, norm_layer)
+        basic_input_channels = 256
+        if backbone not in ('resnet18', 'resnet34'):
+            basic_input_channels *= 4
+        self.global_context = _GlobalAvgPooling(
+            basic_input_channels*2, inter_channels, norm_layer)
 
         self.arms = nn.ModuleList(
             [AttentionRefinmentModule(basic_input_channels*2, inter_channels, norm_layer, **kwargs),
@@ -157,7 +177,7 @@ class ContextPath(nn.Module):
         self.refines = nn.ModuleList(
             [_ConvBNReLU(inter_channels, inter_channels, 3, 1, 1, norm_layer=norm_layer),
              _ConvBNReLU(inter_channels, inter_channels, 3, 1, 1, norm_layer=norm_layer)]
-        )        
+        )
 
     def forward(self, x):
         x = self.conv1(x)
@@ -193,11 +213,14 @@ class ContextPath(nn.Module):
 class FeatureFusion(nn.Module):
     def __init__(self, in_channels, out_channels, reduction=1, norm_layer=nn.BatchNorm2d, **kwargs):
         super(FeatureFusion, self).__init__()
-        self.conv1x1 = _ConvBNReLU(in_channels, out_channels, 1, 1, 0, norm_layer=norm_layer, **kwargs)
+        self.conv1x1 = _ConvBNReLU(
+            in_channels, out_channels, 1, 1, 0, norm_layer=norm_layer, **kwargs)
         self.channel_attention = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
-            _ConvBNReLU(out_channels, out_channels // reduction, 1, 1, 0, norm_layer=norm_layer),
-            _ConvBNReLU(out_channels // reduction, out_channels, 1, 1, 0, norm_layer=norm_layer),
+            _ConvBNReLU(out_channels, out_channels // reduction,
+                        1, 1, 0, norm_layer=norm_layer),
+            _ConvBNReLU(out_channels // reduction, out_channels,
+                        1, 1, 0, norm_layer=norm_layer),
             nn.Sigmoid()
         )
 
@@ -212,14 +235,16 @@ class FeatureFusion(nn.Module):
 class _ConvBNReLU(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0,
                  dilation=1, groups=1, relu6=False, norm_layer=nn.BatchNorm2d, **kwargs):
-        super(_ConvBNReLU, self).__init__()        
-        self.conv = Depthwise_Separable_Conv(in_channels,out_channels,kernel_size,stride,padding)
+        super(_ConvBNReLU, self).__init__()
+        self.conv = Depthwise_Separable_Conv(
+            in_channels, out_channels, kernel_size, stride, padding)
         self.bn = norm_layer(out_channels)
         self.relu = nn.ReLU6(True) if relu6 else nn.ReLU(True)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu')
             elif isinstance(m, norm_layer):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
@@ -229,4 +254,3 @@ class _ConvBNReLU(nn.Module):
         x = self.bn(x)
         x = self.relu(x)
         return x
- 
