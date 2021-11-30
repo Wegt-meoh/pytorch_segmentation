@@ -11,7 +11,7 @@ from Configer import get_parsed_args
 from models.get_segmentation_model import get_segmentation_model
 from dataload.get_segmentatio_dataset import get_segmentation_dataset
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '6'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
 
 class Trainer():
@@ -38,6 +38,7 @@ class Trainer():
             params=self.model.parameters(), lr=args.lr, momentum=0.9, weight_decay=4e-4)
 
         self.epoch_data, self.acc_data, self.mIoU_data = [], [], []
+        self.best_result = 0.0
 
     def train(self):
         print('Start train...')
@@ -64,10 +65,9 @@ class Trainer():
                     logger.info('epoch:{}/{}, iter:{}/{}, lr:{:.6f}, loss:{:.4f}'.format(
                         epoch+1, self.args.epoch, iter, len(self.train_loader), lr_now, loss_res.item()))
 
-            if (epoch+1) % 4 == 0:
+            if (epoch+1) % 1 == 0:
                 self.save_model(epoch+1)
                 self.eval(epoch+1)
-
         self.save_plt()
         pass
 
@@ -101,6 +101,11 @@ class Trainer():
         mIoU = np.nanmean(total_inter/total_union)
         self.acc_data.append(acc)
         self.mIoU_data.append(mIoU)
+
+        if acc+mIoU > self.best_result:
+            self.best_result = acc+mIoU
+            self.save_model('best_in_epoch{}_'.format(epoch))
+
         self.model.train()
         pass
 
@@ -120,13 +125,13 @@ class Trainer():
         plt.savefig(save_path+'/mIoU.png')
         pass
 
-    def save_model(self, epoch):
+    def save_model(self, name):
         model_save_path = '{}/{}_{}_{}/models'.format(
             self.args.result_dir, self.args.model, self.args.backbone, self.args.dataset)
         if not os.path.exists(model_save_path):
             os.makedirs(model_save_path)
         torch.save(self.model.state_dict(), os.path.join(
-            model_save_path, str(epoch))+'.pth')
+            model_save_path, str(name))+'.pth')
         print('save model:'+model_save_path)
         pass
 
