@@ -1,3 +1,4 @@
+import os
 import torch
 from tqdm import tqdm
 from torch.utils import data
@@ -9,6 +10,8 @@ from dataload.utils import save_pred
 from Configer import get_parsed_args
 from models.get_segmentation_model import get_segmentation_model
 from dataload.get_segmentatio_dataset import get_segmentation_dataset
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '7'
 
 
 class Evalator():
