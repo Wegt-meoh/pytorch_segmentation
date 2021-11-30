@@ -16,44 +16,28 @@ class BiSeNetVV(nn.Module):
         self.spatial_path = SpatialPath(3, 128, **kwargs)
         self.context_path = ContextPath(backbone, pretrained_base, **kwargs)
         self.ffm = FeatureFusion(256, 256, 4, **kwargs)
-        self.head = _BiSeHead(256, 64, num_class, **kwargs)
+        self.head = _BiSeHead(128, 64, num_class, **kwargs)
         # lower upsample
-        self.conv1 = nn.Sequential(
-            _ConvBNReLU(num_class, num_class, 3, 1, 1),
-            _ConvBNReLU(num_class, num_class, 3, 1, 1),
-            _ConvBNReLU(num_class, num_class, 3, 1, 1)
-        )
-        self.conv2 = nn.Sequential(
-            _ConvBNReLU(num_class, num_class, 3, 1, 1),
-            _ConvBNReLU(num_class, num_class, 3, 1, 1),
-            _ConvBNReLU(num_class, num_class, 3, 1, 1)
-        )
-        self.conv3 = nn.Sequential(
-            _ConvBNReLU(num_class, num_class, 3, 1, 1),
-            _ConvBNReLU(num_class, num_class, 3, 1, 1),
-            _ConvBNReLU(num_class, num_class, 3, 1, 1),
-            nn.Dropout(0.1),
-            Depthwise_Separable_Conv(num_class, num_class, 1)
-        )
+        self.conv1 = _ConvBNReLU(64, 64, 1)
+        self.conv2 = _ConvBNReLU(256, 256, 1)
 
     def forward(self, x):
         size = x.size()[2:]
         spatial_out = self.spatial_path(x)
-        context_out = self.context_path(x)
+        context_out, lower_feature = self.context_path(x)
         fusion_out = self.ffm(spatial_out, context_out[-1])
 
-        x = self.head(fusion_out)
+        # decoder
+        lower_feature = self.conv1(lower_feature)
+        lower_feature = F.interpolate(lower_feature, (int(
+            size[0]/4), int(size[1]/4)), mode='bilinear', align_corners=True)
 
-        x = F.interpolate(x, scale_factor=2, mode='bilinear',
-                          align_corners=True)
-        x = self.conv1(x)
-        x = F.interpolate(x, scale_factor=2, mode='bilinear',
-                          align_corners=True)
-        x = self.conv2(x)
-        x = F.interpolate(x, scale_factor=2, mode='bilinear',
-                          align_corners=True)
-        x = self.conv3(x)
+        fusion_out = self.conv2(fusion_out)
+        fusion_out = F.interpolate(lower_feature, (int(
+            size[0]/4), int(size[1]/4)), mode='bilinear', align_corners=True)
 
+        x = torch.cat([lower_feature, fusion_out], dim=1)
+        x = self.head(x)
         x = F.interpolate(x, size, mode='bilinear', align_corners=True)
         return x
 
@@ -64,7 +48,7 @@ class _BiSeHead(nn.Module):
         self.block = nn.Sequential(
             _ConvBNReLU(in_channels, inter_channels, 3,
                         1, 1, norm_layer=norm_layer),
-            # nn.Dropout(0.1),
+            nn.Dropout(0.1),
             Depthwise_Separable_Conv(inter_channels, num_class, 1)
         )
 
@@ -207,7 +191,7 @@ class ContextPath(nn.Module):
             last_feature = refine(last_feature)
             context_outputs.append(last_feature)
 
-        return context_outputs
+        return context_outputs, context_blocks[3]
 
 
 class FeatureFusion(nn.Module):
