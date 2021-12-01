@@ -31,12 +31,11 @@ class BiSeNetVV(nn.Module):
         lower_feature = self.conv1(lower_feature)
         lower_feature = F.interpolate(lower_feature, (int(
             size[0]/4), int(size[1]/4)), mode='bilinear', align_corners=True)
-
         fusion_out = self.conv2(fusion_out)
         fusion_out = F.interpolate(lower_feature, (int(
             size[0]/4), int(size[1]/4)), mode='bilinear', align_corners=True)
-
         x = torch.cat([lower_feature, fusion_out], dim=1)
+
         x = self.head(x)
         x = F.interpolate(x, size, mode='bilinear', align_corners=True)
         return x
