@@ -4,7 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from models.base_models.resnet import *
-from models.model_module import Depthwise_Separable_Conv
 
 # H_{out} = \left\lfloor\frac{H_{in}  + 2 \times \text{padding}[0] - \text{dilation}[0]
 #                         \times (\text{kernel\_size}[0] - 1) - 1}{\text{stride}[0]} + 1\right\rfloor
@@ -236,4 +235,19 @@ class _ConvBNReLU(nn.Module):
         x = self.conv(x)
         x = self.bn(x)
         x = self.relu(x)
+        return x
+
+
+class Depthwise_Separable_Conv(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, **kwargs):
+        super().__init__()
+        self.depthwise = nn.Conv2d(in_channels, in_channels, kernel_size=kernel_size,
+                                   stride=stride, padding=padding, groups=in_channels)
+        self.pointwise = nn.Conv2d(
+            in_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        pass
+
+    def forward(self, x):
+        x = self.depthwise(x)
+        x = self.pointwise(x)
         return x
