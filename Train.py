@@ -11,7 +11,7 @@ from Configer import get_parsed_args
 from models.get_segmentation_model import get_segmentation_model
 from dataload.get_segmentatio_dataset import get_segmentation_dataset
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '4'
 
 
 class Trainer():
@@ -104,7 +104,7 @@ class Trainer():
 
         if acc+mIoU > self.best_result:
             self.best_result = acc+mIoU
-            self.save_model('best_in_epoch{}_'.format(epoch))
+            self.save_model('best_model')
 
         self.model.train()
         pass
