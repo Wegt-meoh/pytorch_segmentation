@@ -111,7 +111,7 @@ class Xception(nn.Module):
     https://arxiv.org/pdf/1610.02357.pdf
     """
 
-    def __init__(self, os):
+    def __init__(self, os, **kwargs):
         """ Constructor
         Args:
             num_classes: number of classes
