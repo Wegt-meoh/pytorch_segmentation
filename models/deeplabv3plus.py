@@ -59,7 +59,7 @@ class deeplabv3plus(nn.Module):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
         self.backbone = build_backbone(
-            cfg.MODEL_BACKBONE, os=cfg.MODEL_OUTPUT_STRIDE, pretrained=pretrained_base, **kwargs)
+            backbone, os=cfg.MODEL_OUTPUT_STRIDE, pretrained=pretrained_base, **kwargs)
         self.backbone_layers = self.backbone.get_layers()
 
     def forward(self, x):
@@ -83,7 +83,7 @@ class deeplabv3plus(nn.Module):
         # result = self.upsample4(result)
         upsamplele4 = nn.UpsamplingBilinear2d(size=(h, w))
         result = upsamplele4(result)
-        return tuple(result.unsqueeze(0))
+        return result
 
 
 def build_backbone(backbone_name, pretrained=False, os=16, **kwargs):
@@ -174,8 +174,6 @@ class ASPP(nn.Module):
 
 class Configuration():
     def __init__(self):
-
-        self.MODEL_BACKBONE = 'res50_atrous'
         self.MODEL_OUTPUT_STRIDE = 16
         self.MODEL_ASPP_OUTDIM = 256
         self.MODEL_SHORTCUT_DIM = 48
