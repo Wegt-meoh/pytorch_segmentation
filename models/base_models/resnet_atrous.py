@@ -100,7 +100,7 @@ class Bottleneck(nn.Module):
 
 class ResNet_Atrous(nn.Module):
 
-    def __init__(self, block, layers, atrous=None, os=16):
+    def __init__(self, block, layers, atrous=None, os=16, **kwargs):
         super(ResNet_Atrous, self).__init__()
         stride_list = None
         if os == 8:
