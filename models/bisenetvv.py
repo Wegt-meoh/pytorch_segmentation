@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.base_models.resnet import *
-
+from models.base_models.resnet_atrous import resnet50_atrous, resnet101_atrous, resnet152_atrous
+from models.base_models.resnet import resnet34
 # H_{out} = \left\lfloor\frac{H_{in}  + 2 \times \text{padding}[0] - \text{dilation}[0]
 #                         \times (\text{kernel\_size}[0] - 1) - 1}{\text{stride}[0]} + 1\right\rfloor
 
@@ -15,10 +15,7 @@ class BiSeNetVV(nn.Module):
         self.spatial_path = SpatialPath(3, 128, **kwargs)
         self.context_path = ContextPath(backbone, pretrained_base, **kwargs)
         self.ffm = FeatureFusion(256, 256, 4, **kwargs)
-        self.head = _BiSeHead(128, 64, num_class, **kwargs)
-        # lower upsample
-        self.conv1 = _ConvBNReLU(64, 64, 1)
-        self.conv2 = _ConvBNReLU(256, 256, 1)
+        self.head = _BiSeHead(256, 64, num_class, **kwargs)
 
     def forward(self, x):
         size = x.size()[2:]
@@ -26,16 +23,7 @@ class BiSeNetVV(nn.Module):
         context_out, lower_feature = self.context_path(x)
         fusion_out = self.ffm(spatial_out, context_out[-1])
 
-        # decoder
-        lower_feature = self.conv1(lower_feature)
-        lower_feature = F.interpolate(lower_feature, (int(
-            size[0]/4), int(size[1]/4)), mode='bilinear', align_corners=True)
-        fusion_out = self.conv2(fusion_out)
-        fusion_out = F.interpolate(lower_feature, (int(
-            size[0]/4), int(size[1]/4)), mode='bilinear', align_corners=True)
-        x = torch.cat([lower_feature, fusion_out], dim=1)
-
-        x = self.head(x)
+        x = self.head(fusion_out)
         x = F.interpolate(x, size, mode='bilinear', align_corners=True)
         return x
 
@@ -58,25 +46,79 @@ class _BiSeHead(nn.Module):
 class SpatialPath(nn.Module):
     """Spatial path"""
 
-    def __init__(self, in_channels, out_channels, norm_layer=nn.BatchNorm2d, **kwargs):
+    def __init__(self, in_channels, out_channels, norm_layer=nn.BatchNorm2d, rate=1, **kwargs):
         super(SpatialPath, self).__init__()
-        inter_channels = 64
+
         self.conv7x7 = _ConvBNReLU(
-            in_channels, inter_channels, 7, 2, 3, norm_layer=norm_layer)
+            out_channels*4, out_channels*4, 7, 2, 3, norm_layer=norm_layer)
         self.conv3x3_1 = _ConvBNReLU(
-            inter_channels, inter_channels, 3, 2, 1, norm_layer=norm_layer)
+            out_channels*4, out_channels*4, 3, 2, 1, norm_layer=norm_layer)
         self.conv3x3_2 = _ConvBNReLU(
-            inter_channels, inter_channels, 3, 2, 1, norm_layer=norm_layer)
-        self.conv1x1 = _ConvBNReLU(
-            inter_channels, out_channels, 1, 1, 0, norm_layer=norm_layer)
+            out_channels*4, out_channels*4, 3, 2, 1, norm_layer=norm_layer)
+
+        self.branch1 = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 1,
+                      1, 0, dilation=rate, bias=True),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(True)
+        )
+        self.branch2 = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 3, 1,
+                      6*rate, dilation=6*rate, bias=True),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(True)
+        )
+        self.branch3 = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 3, 1, 12 *
+                      rate, dilation=12*rate, bias=True),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(True)
+        )
+        self.branch4 = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 3, 1, 18 *
+                      rate, dilation=18*rate, bias=True),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(True)
+        )
+        # self.branch5_conv = nn.Conv2d(
+        #     in_channels, out_channels, 1, 1, 0, bias=True)
+        # self.branch5_bn = nn.BatchNorm2d(out_channels)
+        # self.branch5_relu = nn.ReLU(inplace=True)
+        # self.conv_cat = nn.Sequential(
+        #     nn.Conv2d(out_channels*5, out_channels,
+        #               1, 1, padding=0, bias=True),
+        #     nn.BatchNorm2d(out_channels),
+        #     nn.ReLU(inplace=True),
+        # )
+        self.conv_cat = nn.Sequential(
+            nn.Conv2d(out_channels*4, out_channels, 1, 1, padding=0),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+        )
 
     def forward(self, x):
-        x = self.conv7x7(x)
-        x = self.conv3x3_1(x)
-        x = self.conv3x3_2(x)
-        x = self.conv1x1(x)
+        [b, c, row, col] = x.size()
+        conv1x1 = self.branch1(x)
+        conv3x3_1 = self.branch2(x)
+        conv3x3_2 = self.branch3(x)
+        conv3x3_3 = self.branch4(x)
+        # global_feature = torch.mean(x, 2, True)
+        # global_feature = torch.mean(global_feature, 3, True)
+        # global_feature = self.branch5_conv(global_feature)
+        # global_feature = self.branch5_bn(global_feature)
+        # global_feature = self.branch5_relu(global_feature)
+        # global_feature = F.interpolate(
+        #     global_feature, (row, col), None, 'bilinear', True)
 
-        return x
+        # feature_cat = torch.cat(
+        #     [conv1x1, conv3x3_1, conv3x3_2, conv3x3_3, global_feature], dim=1)
+        feature_cat = torch.cat(
+            [conv1x1, conv3x3_1, conv3x3_2, conv3x3_3], dim=1)
+        feature_cat = self.conv7x7(feature_cat)
+        feature_cat = self.conv3x3_1(feature_cat)
+        feature_cat = self.conv3x3_2(feature_cat)
+        result = self.conv_cat(feature_cat)
+        return result
 
 
 class _GlobalAvgPooling(nn.Module):
@@ -167,6 +209,7 @@ class ContextPath(nn.Module):
         x = self.relu(x)
         x = self.maxpool(x)
         x = self.layer1(x)
+        lower_feature = x.clone()
 
         context_blocks = []
         context_blocks.append(x)
@@ -189,7 +232,7 @@ class ContextPath(nn.Module):
             last_feature = refine(last_feature)
             context_outputs.append(last_feature)
 
-        return context_outputs, context_blocks[3]
+        return context_outputs, lower_feature
 
 
 class FeatureFusion(nn.Module):
@@ -218,7 +261,7 @@ class _ConvBNReLU(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0,
                  dilation=1, groups=1, relu6=False, norm_layer=nn.BatchNorm2d, **kwargs):
         super(_ConvBNReLU, self).__init__()
-        self.conv = Depthwise_Separable_Conv(
+        self.conv = nn.Conv2d(
             in_channels, out_channels, kernel_size, stride, padding)
         self.bn = norm_layer(out_channels)
         self.relu = nn.ReLU6(True) if relu6 else nn.ReLU(True)
