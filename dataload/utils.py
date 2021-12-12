@@ -4,11 +4,14 @@ import os
 
 
 def save_pred(pred, path, filename, dataset):
-    impred = Image.fromarray(pred)
+    impred = Image.fromarray(pred.astype('uint8'))
     if dataset == 'cvc_voc':
-        impred.putpalette(cvc_palette())
+        impred.putpalette(get_cvc_palette())
     elif dataset in ['pascal_voc', 'coco']:
-        impred.putpalette(_getvocpallete(256))
+        impred[impred == -1] = 255
+        impred.putpalette(get_voc_pallette(256))
+    elif dataset == 'cityscapes':
+        impred.putpalette(cityscalpes_pallette)
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -16,14 +19,14 @@ def save_pred(pred, path, filename, dataset):
     pass
 
 
-def cvc_palette():
+def get_cvc_palette():
     palette = [255, 255, 255, 0, 0, 0]
     for i in range(256*3-6):
         palette.append(0)
     return palette
 
 
-def _getvocpallete(num_cls):
+def get_voc_pallette(num_cls):
     n = num_cls
     pallete = [0] * (n * 3)
     for j in range(0, n):
@@ -39,3 +42,26 @@ def _getvocpallete(num_cls):
             i = i + 1
             lab >>= 3
     return pallete
+
+
+cityscapes_pallette = [
+    128, 64, 128,
+    244, 35, 232,
+    70, 70, 70,
+    102, 102, 156,
+    190, 153, 153,
+    153, 153, 153,
+    250, 170, 30,
+    220, 220, 0,
+    107, 142, 35,
+    152, 251, 152,
+    0, 130, 180,
+    220, 20, 60,
+    255, 0, 0,
+    0, 0, 142,
+    0, 0, 70,
+    0, 60, 100,
+    0, 80, 100,
+    0, 0, 230,
+    119, 11, 32,
+]
