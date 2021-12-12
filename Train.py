@@ -66,7 +66,6 @@ class Trainer():
                         epoch+1, self.args.epoch, iter, len(self.train_loader), lr_now, loss_res.item()))
 
             if (epoch+1) % 1 == 0:
-                self.save_model(epoch+1)
                 self.eval(epoch+1)
         self.save_plt()
         pass
