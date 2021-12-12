@@ -191,6 +191,24 @@ class ResNet_Atrous(nn.Module):
         return x
 
 
+def resnet34_atrous(pretrained=True, os=16, **kwagrs):
+    model = ResNet_Atrous(BasicBlock, [3, 4, 6, 3], atrous=[
+                          1, 2, 1], os=os, **kwargs)
+
+    if pretrained:
+        old_dict = model_zoo.load_url(
+            model_urls['resnet34'], model_dir=kwargs['backbone_dir'])
+        # old_dict = torch.load('/home/deep1/QuePengbiao/pretrain_models/resnet50-19c8e357.pth')
+        model_dict = model.state_dict()
+        old_dict = {k: v for k, v in old_dict.items() if (k in model_dict)}
+        model_dict.update(old_dict)
+        model.load_state_dict(model_dict)
+        print('load resnet34 as pretrained backbone from {}'.format(
+            kwargs['backbone_dir']))
+    return model
+    pass
+
+
 def resnet50_atrous(pretrained=True, os=16, **kwargs):
     """Constructs a atrous ResNet-50 model."""
     model = ResNet_Atrous(Bottleneck, [3, 4, 6, 3], atrous=[
