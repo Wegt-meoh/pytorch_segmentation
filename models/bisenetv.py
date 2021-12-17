@@ -3,16 +3,22 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from models.base_models.resnet import *
 from models.base_models.resnet_atrous import resnet50_atrous
 
 
 class BiSeNetV(nn.Module):
-    def __init__(self, num_class, backbone='resnet34', pretrained_base=True, **kwargs):
+    def __init__(self, num_class, backbone='resnet34', pretrained_base=True, aux=False, **kwargs):
         super(BiSeNetV, self).__init__()
+        self.aux = aux
         self.spatial_path = SpatialPath(3, 128, **kwargs)
         self.context_path = ContextPath(backbone, pretrained_base, **kwargs)
         self.ffm = FeatureFusion(256, 256, 4, **kwargs)
         self.head = _BiSeHead(256, 64, num_class, **kwargs)
+
+        if aux:
+            self.auxlayer1 = _BiSeHead(128, 256, num_class, **kwargs)
+            self.auxlayer2 = _BiSeHead(128, 256, num_class, **kwargs)
 
     def forward(self, x):
         size = x.size()[2:]
@@ -21,7 +27,19 @@ class BiSeNetV(nn.Module):
         fusion_out = self.ffm(spatial_out, context_out[-1])
         x = self.head(fusion_out)
         x = F.interpolate(x, size, mode='bilinear', align_corners=True)
-        return x
+        outputs = []
+        outputs.append(x)
+
+        if self.aux:
+            auxout1 = self.auxlayer1(context_out[0])
+            auxout1 = F.interpolate(
+                auxout1, size, mode='bilinear', align_corners=True)
+            outputs.append(auxout1)
+            auxout2 = self.auxlayer2(context_out[1])
+            auxout2 = F.interpolate(
+                auxout2, size, mode='bilinear', align_corners=True)
+            outputs.append(auxout2)
+        return tuple(outputs)
 
 
 class _BiSeHead(nn.Module):
@@ -31,7 +49,8 @@ class _BiSeHead(nn.Module):
             _ConvBNReLU(in_channels, inter_channels, 3,
                         1, 1, norm_layer=norm_layer),
             nn.Dropout(0.1),
-            Depthwise_Separable_Conv(inter_channels, num_class, 1)
+            # Depthwise_Separable_Conv(inter_channels, num_class, 1)
+            nn.Conv2d(inter_channels, num_class, 1)
         )
 
     def forward(self, x):
@@ -194,8 +213,10 @@ class _ConvBNReLU(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0,
                  dilation=1, groups=1, relu6=False, norm_layer=nn.BatchNorm2d, **kwargs):
         super(_ConvBNReLU, self).__init__()
-        self.conv = Depthwise_Separable_Conv(
-            in_channels, out_channels, kernel_size, stride, padding)
+        # self.conv = Depthwise_Separable_Conv(
+        #     in_channels, out_channels, kernel_size, stride, padding)
+        self.conv = nn.Conv2d(in_channels, out_channels,
+                              kernel_size, stride, padding)
         self.bn = norm_layer(out_channels)
         self.relu = nn.ReLU6(True) if relu6 else nn.ReLU(True)
 
