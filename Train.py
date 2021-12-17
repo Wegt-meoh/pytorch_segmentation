@@ -7,11 +7,12 @@ import torch.backends.cudnn as cudnn
 
 from utils.Metric import *
 from utils.Logger import get_logger
+from utils.Loss import *
 from Configer import get_parsed_args
 from models.get_segmentation_model import get_segmentation_model
 from dataload.get_segmentatio_dataset import get_segmentation_dataset
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '4'
+os.environ['CUDA_VISIBLE_DEVICES'] = '5'
 
 
 class Trainer():
@@ -30,12 +31,15 @@ class Trainer():
         self.num_class = len(val_dataset.classes)
 
         self.model = get_segmentation_model(
-            name=args.model, num_class=len(train_dataset.classes), pretrained_base=args.pretrained_base, backbone=args.backbone, backbone_dir=args.backbone_dir).to(args.device)
+            name=args.model, num_class=len(train_dataset.classes), pretrained_base=args.pretrained_base,
+            backbone=args.backbone, backbone_dir=args.backbone_dir,
+            aux=args.aux).to(args.device)
 
-        self.criterion = nn.CrossEntropyLoss(ignore_index=-1)
+        self.criterion = MixSoftmaxCrossEntropyLoss(
+            aux=args.aux, aux_weight=args.aux_weight, ignore_index=-1)
 
         self.optimizer = torch.optim.SGD(
-            params=self.model.parameters(), lr=args.lr, momentum=0.9, weight_decay=4e-4)
+            params=self.model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-4)
 
         self.epoch_data, self.acc_data, self.mIoU_data = [], [], []
         self.best_result = 0.0
@@ -57,7 +61,9 @@ class Trainer():
 
                 preds = self.model(images)
 
-                loss_res = self.criterion(preds, masks)
+                loss_dict = self.criterion(preds, masks)
+                loss_res = sum(loss for loss in loss_dict.values())
+
                 loss_res.backward()
                 self.optimizer.step()
 
