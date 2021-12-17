@@ -50,32 +50,32 @@ class SpatialPath(nn.Module):
         super(SpatialPath, self).__init__()
 
         self.conv7x7 = _ConvBNReLU(
-            out_channels*4, out_channels*4, 7, 2, 3, norm_layer=norm_layer)
+            in_channels, 64, 7, 2, 3, norm_layer=norm_layer)
         self.conv3x3_1 = _ConvBNReLU(
-            out_channels*4, out_channels*4, 3, 2, 1, norm_layer=norm_layer)
+            64, 64, 3, 2, 1, norm_layer=norm_layer)
         self.conv3x3_2 = _ConvBNReLU(
-            out_channels*4, out_channels*4, 3, 2, 1, norm_layer=norm_layer)
+            64, 64, 3, 2, 1, norm_layer=norm_layer)
 
         self.branch1 = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 1,
+            nn.Conv2d(64, out_channels, 1,
                       1, 0, dilation=rate, bias=True),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(True)
         )
         self.branch2 = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 3, 1,
+            nn.Conv2d(64, out_channels, 3, 1,
                       6*rate, dilation=6*rate, bias=True),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(True)
         )
         self.branch3 = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 3, 1, 12 *
+            nn.Conv2d(64, out_channels, 3, 1, 12 *
                       rate, dilation=12*rate, bias=True),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(True)
         )
         self.branch4 = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 3, 1, 18 *
+            nn.Conv2d(64, out_channels, 3, 1, 18 *
                       rate, dilation=18*rate, bias=True),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(True)
@@ -98,6 +98,9 @@ class SpatialPath(nn.Module):
 
     def forward(self, x):
         [b, c, row, col] = x.size()
+        x = self.conv7x7(x)
+        x = self.conv3x3_1(x)
+        x = self.conv3x3_2(x)
         conv1x1 = self.branch1(x)
         conv3x3_1 = self.branch2(x)
         conv3x3_2 = self.branch3(x)
@@ -114,9 +117,6 @@ class SpatialPath(nn.Module):
         #     [conv1x1, conv3x3_1, conv3x3_2, conv3x3_3, global_feature], dim=1)
         feature_cat = torch.cat(
             [conv1x1, conv3x3_1, conv3x3_2, conv3x3_3], dim=1)
-        feature_cat = self.conv7x7(feature_cat)
-        feature_cat = self.conv3x3_1(feature_cat)
-        feature_cat = self.conv3x3_2(feature_cat)
         result = self.conv_cat(feature_cat)
         return result
 
