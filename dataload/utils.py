@@ -11,7 +11,7 @@ def save_pred(pred, path, filename, dataset):
         impred[impred == -1] = 255
         impred.putpalette(get_voc_pallette(256))
     elif dataset == 'cityscapes':
-        impred.putpalette(cityscalpes_pallette)
+        impred.putpalette(cityscapes_pallette)
 
     if not os.path.exists(path):
         os.makedirs(path)
