@@ -4,21 +4,24 @@ import argparse
 def get_parsed_args():
     args = argparse.ArgumentParser(description="segmentation parameter")
 
-    args.add_argument("--model", type=str, default='bisenet')
-    args.add_argument('--pretrained_model', type=str, default='/home/deep1/QuePengbiao/result/bisenetvv_resnet34_pascal_voc/models/1792.pth',
+    args.add_argument("--model", type=str, default='bisenetv')
+    args.add_argument('--pretrained_model', type=str, default='/home/deep1/QuePengbiao/result/bisenetvv_resnet34_cityscapes/models/best_model.pth',
                       help='only used in eval')
     args.add_argument("--backbone", type=str, default='resnet34')
     args.add_argument("--pretrained_base", type=bool, default=True)
     args.add_argument("--backbone_dir", type=str,
                       default='/home/deep1/QuePengbiao/pretrain_models')
-    args.add_argument("--lr", type=float, default=1e-4)
+    args.add_argument("--lr", type=float, default=2.5e-2)
 
-    args.add_argument("--dataset", type=str, default='pascal_voc')
-    args.add_argument("--epoch", type=int, default=2000)
-    args.add_argument("--batch_size", type=int, default=8)
-    args.add_argument("--base_size", type=int, default=513)
-    args.add_argument("--crop_size", type=int, default=513)
+    args.add_argument("--dataset", type=str, default='cityscapes')
+    args.add_argument("--epoch", type=int, default=800)
+    args.add_argument("--batch_size", type=int, default=4)
+    args.add_argument("--base_size", type=int, default=1024)
+    args.add_argument("--crop_size", type=int, default=1024)
     args.add_argument("--workers", type=int, default=8)
+
+    args.add_argument("--aux", type=bool, default=True)
+    args.add_argument("--aux_weight", type=float, default=1.0)
 
     args.add_argument("--device", type=str, default='cuda',
                       choices=['cuda', 'cpu'])
