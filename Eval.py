@@ -11,7 +11,7 @@ from Configer import get_parsed_args
 from models.get_segmentation_model import get_segmentation_model
 from dataload.get_segmentatio_dataset import get_segmentation_dataset
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '6'
 
 
 class Evalator():
@@ -51,7 +51,7 @@ class Evalator():
 
                 image = image.to(self.args.device)
 
-                pred = self.model(image)
+                pred = self.model(image)[0]
                 predict = torch.argmax(pred[0], dim=0)
                 predict = predict.cpu().numpy().astype('uint8')
                 mask = mask.numpy().astype('uint8')
