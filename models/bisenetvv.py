@@ -10,22 +10,42 @@ from models.base_models.resnet import resnet34
 
 
 class BiSeNetVV(nn.Module):
-    def __init__(self, num_class, backbone='resnet34', pretrained_base=True, **kwargs):
+    def __init__(self, num_class, backbone='resnet34', pretrained_base=True, aux=False, **kwargs):
         super(BiSeNetVV, self).__init__()
         self.spatial_path = SpatialPath(3, 128, **kwargs)
         self.context_path = ContextPath(backbone, pretrained_base, **kwargs)
         self.ffm = FeatureFusion(256, 256, 4, **kwargs)
         self.head = _BiSeHead(256, 64, num_class, **kwargs)
+        self.aux = aux
+
+        if aux:
+            self.auxlayer1 = _BiSeHead(128, 256, num_class, **kwargs)
+            self.auxlayer2 = _BiSeHead(128, 256, num_class, **kwargs)
 
     def forward(self, x):
         size = x.size()[2:]
         spatial_out = self.spatial_path(x)
-        context_out, lower_feature = self.context_path(x)
+        context_out = self.context_path(x)
         fusion_out = self.ffm(spatial_out, context_out[-1])
 
         x = self.head(fusion_out)
         x = F.interpolate(x, size, mode='bilinear', align_corners=True)
-        return x
+
+        outputs = []
+
+        outputs.append(x)
+
+        if self.aux:
+            auxout1 = self.auxlayer1(context_out[0])
+            auxout1 = F.interpolate(
+                auxout1, size, mode='bilinear', align_corners=True)
+            outputs.append(auxout1)
+            auxout2 = self.auxlayer2(context_out[1])
+            auxout2 = F.interpolate(
+                auxout2, size, mode='bilinear', align_corners=True)
+            outputs.append(auxout2)
+
+        return tuple(outputs)
 
 
 class _BiSeHead(nn.Module):
@@ -209,7 +229,6 @@ class ContextPath(nn.Module):
         x = self.relu(x)
         x = self.maxpool(x)
         x = self.layer1(x)
-        lower_feature = x.clone()
 
         context_blocks = []
         context_blocks.append(x)
@@ -232,7 +251,7 @@ class ContextPath(nn.Module):
             last_feature = refine(last_feature)
             context_outputs.append(last_feature)
 
-        return context_outputs, lower_feature
+        return context_outputs
 
 
 class FeatureFusion(nn.Module):
