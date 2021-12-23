@@ -4,13 +4,15 @@ import os
 
 
 def save_pred(pred, path, filename, dataset):
-    impred = Image.fromarray(pred.astype('uint8'))
     if dataset == 'cvc_voc':
+        impred = Image.fromarray(pred.astype('uint8'))
         impred.putpalette(get_cvc_palette())
     elif dataset in ['pascal_voc', 'coco']:
-        impred[impred == -1] = 255
+        # pred[pred == -1] = 255
+        impred = Image.fromarray(pred.astype('uint8'))
         impred.putpalette(get_voc_pallette(256))
     elif dataset == 'cityscapes':
+        impred = Image.fromarray(pred.astype('uint8'))
         impred.putpalette(cityscapes_pallette)
 
     if not os.path.exists(path):
