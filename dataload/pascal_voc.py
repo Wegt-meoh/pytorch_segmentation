@@ -75,8 +75,8 @@ class VOCSegmentation():
             mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
         crop_size = self.crop_size
         # random scale (short edge)
-        short_size = random.randint(
-            int(self.base_size * 0.5), int(self.base_size * 2.0))
+        size_rate = random.choice([0.75, 1.0, 1.5, 1.75, 2.0])
+        short_size = int(self.base_size * size_rate)
         w, h = img.size
         if h > w:
             ow = short_size
@@ -99,8 +99,8 @@ class VOCSegmentation():
         img = img.crop((x1, y1, x1 + crop_size, y1 + crop_size))
         mask = mask.crop((x1, y1, x1 + crop_size, y1 + crop_size))
         # gaussian blur as in PSP
-        if random.random() < 0.5:
-            img = img.filter(ImageFilter.GaussianBlur(radius=random.random()))
+        # if random.random() < 0.5:
+        #     img = img.filter(ImageFilter.GaussianBlur(radius=random.random()))
         # final transform
         img, mask = self._img_transform(img), self._mask_transform(mask)
         return img, mask
