@@ -10,7 +10,7 @@ from models.base_models.resnet import resnet34
 
 
 class BiSeNetVVV(nn.Module):
-    def __init__(self, num_class, backbone='resnet34', pretrained_base=True, aux=False, **kwargs):
+    def __init__(self, num_class, backbone='resnet34', pretrained_base=False, aux=False, **kwargs):
         super(BiSeNetVVV, self).__init__()
         self.spatial_path = SpatialPath(3, 128, **kwargs)
         self.context_path = ContextPath(backbone, pretrained_base, **kwargs)
