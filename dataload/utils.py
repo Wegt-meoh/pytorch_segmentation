@@ -20,6 +20,20 @@ def save_pred(pred, path, filename, dataset):
     impred.save(path+'/'+filename+'.png')
     pass
 
+def get_pred(pred,dataset):
+    if dataset == 'cvc_voc':
+        impred = Image.fromarray(pred.astype('uint8'))
+        impred.putpalette(get_cvc_palette())
+    elif dataset in ['pascal_voc', 'coco']:
+        # pred[pred == -1] = 255
+        impred = Image.fromarray(pred.astype('uint8'))
+        impred.putpalette(get_voc_pallette(256))
+    elif dataset == 'cityscapes':
+        impred = Image.fromarray(pred.astype('uint8'))
+        impred.putpalette(cityscapes_pallette)
+    
+    return impred
+
 
 def get_cvc_palette():
     palette = [255, 255, 255, 0, 0, 0]
