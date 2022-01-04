@@ -8,7 +8,7 @@ from models.base_models.resnet_atrous import resnet50_atrous
 
 
 class BiSeNetV(nn.Module):
-    def __init__(self, num_class, backbone='resnet34', pretrained_base=True, aux=False, **kwargs):
+    def __init__(self, num_class, backbone='resnet34', pretrained_base=False, aux=False, **kwargs):
         super(BiSeNetV, self).__init__()
         self.aux = aux
         self.spatial_path = SpatialPath(3, 128, **kwargs)
