@@ -38,7 +38,7 @@ class CitySegmentation():
     BASE_DIR = 'cityscapes'
     NUM_CLASS = 19
 
-    def __init__(self, root='/home/deep1/QuePengbiao/datasets', split='train', base_size=513, crop_size=513, **kwargs):
+    def __init__(self, root='/home/deep1/xxxx/datasets', split='train', base_size=513, crop_size=513, **kwargs):
         self.transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize([.485, .456, .406], [.229, .224, .225]),

@@ -25,7 +25,7 @@ bn_mom = 0.0003
 __all__ = ['xception']
 
 model_urls = {
-    # '/home/deep1/QuePengbiao/pretrain_models/xception-b5690688.pth'
+    # '/home/deep1/xxxx/pretrain_models/xception-b5690688.pth'
     'xception': 'http://data.lip6.fr/cadene/pretrainedmodels/xception-b5690688.pth'
 }
 

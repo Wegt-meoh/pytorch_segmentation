@@ -39,7 +39,7 @@ class VOCAugSegmentation():
     BASE_DIR = 'dataset/'
     NUM_CLASS = 21
 
-    def __init__(self, root='/home/deep1/QuePengbiao/datasets/benchmark_RELEASE', split='train', base_size=513, crop_size=513, **kwargs):
+    def __init__(self, root='/home/deep1/xxxx/datasets/benchmark_RELEASE', split='train', base_size=513, crop_size=513, **kwargs):
         self.transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize([.485, .456, .406], [.229, .224, .225]),

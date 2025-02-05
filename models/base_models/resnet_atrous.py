@@ -198,7 +198,7 @@ def resnet34_atrous(pretrained=True, os=16, **kwagrs):
     if pretrained:
         old_dict = model_zoo.load_url(
             model_urls['resnet34'], model_dir=kwargs['backbone_dir'])
-        # old_dict = torch.load('/home/deep1/QuePengbiao/pretrain_models/resnet50-19c8e357.pth')
+        # old_dict = torch.load('/home/deep1/xxxx/pretrain_models/resnet50-19c8e357.pth')
         model_dict = model.state_dict()
         old_dict = {k: v for k, v in old_dict.items() if (k in model_dict)}
         model_dict.update(old_dict)
@@ -216,7 +216,7 @@ def resnet50_atrous(pretrained=True, os=16, **kwargs):
     if pretrained:
         old_dict = model_zoo.load_url(
             model_urls['resnet50'], model_dir=kwargs['backbone_dir'])
-        # old_dict = torch.load('/home/deep1/QuePengbiao/pretrain_models/resnet50-19c8e357.pth')
+        # old_dict = torch.load('/home/deep1/xxxx/pretrain_models/resnet50-19c8e357.pth')
         model_dict = model.state_dict()
         old_dict = {k: v for k, v in old_dict.items() if (k in model_dict)}
         model_dict.update(old_dict)

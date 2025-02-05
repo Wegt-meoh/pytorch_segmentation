@@ -8,7 +8,7 @@ from torchvision import transforms
 
 
 class VOCSegmentation():
-    def __init__(self, root='/home/deep1/QuePengbiao/datasets/VOCdevkit/VOC2012', split='train', base_size=513, crop_size=513, **kwargs) -> None:
+    def __init__(self, root='/home/deep1/xxxx/datasets/VOCdevkit/VOC2012', split='train', base_size=513, crop_size=513, **kwargs) -> None:
         self.transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize([.485, .456, .406], [.229, .224, .225]),
