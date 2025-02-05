@@ -5,12 +5,12 @@ def get_parsed_args():
     args = argparse.ArgumentParser(description="segmentation parameter")
 
     args.add_argument("--model", type=str, default='bisenet')
-    args.add_argument('--pretrained_model', type=str, default='/home/deep1/QuePengbiao/result/bisenet_resnet34_pascal_voc/models/best_model.pth',
+    args.add_argument('--pretrained_model', type=str, default='/home/deep1/xxxx/result/bisenet_resnet34_pascal_voc/models/best_model.pth',
                       help='only used in eval')
     args.add_argument("--backbone", type=str, default='resnet34')
     args.add_argument("--pretrained_base", type=bool, default=True)
     args.add_argument("--backbone_dir", type=str,
-                      default='/home/deep1/QuePengbiao/pretrain_models')
+                      default='/home/deep1/xxxx/pretrain_models')
     args.add_argument("--lr", type=float, default=2.5e-2)
 
     args.add_argument("--dataset", type=str, default='pascal_voc')
@@ -27,7 +27,7 @@ def get_parsed_args():
                       choices=['cuda', 'cpu'])
 
     args.add_argument("--result_dir", type=str,
-                      default='/home/deep1/QuePengbiao/result')
+                      default='/home/deep1/xxxx/result')
 
     return args.parse_args()
 
